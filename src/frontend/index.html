@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Virtual Drawing via Hand Gestures</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <canvas id="particle-canvas"></canvas>
+
+    <nav class="navbar">
+        <div class="logo">
+            <i class="fa-solid fa-paintbrush"></i> Virtual Draw
+        </div>
+        <ul class="nav-links">
+            <li><a href="#features">Features</a></li>
+            <li><a href="#how-it-works">How it Works</a></li>
+            <li><a href="#how-to-run">How to Run</a></li>
+            <li><a href="#gesture-guide">Gesture Guide</a></li>
+        </ul>
+    </nav>
+
+    <header class="hero">
+        <div class="hero-content">
+            <h1>Draw with your Hands in Mid-Air</h1>
+            <p>An interactive Python application using OpenCV and MediaPipe to translate your hand gestures into virtual art.</p>
+            <div class="hero-buttons">
+                <a href="#how-to-run" class="btn btn-primary">Download & Run</a>
+                <a href="#" class="btn btn-secondary"><i class="fa-brands fa-github"></i> View on GitHub</a>
+            </div>
+        </div>
+    </header>
+
+    <section id="features" class="section">
+        <h2 class="section-title">Features</h2>
+        <div class="features-grid">
+            <div class="feature-card">
+                <i class="fa-solid fa-video"></i>
+                <h3>Real-time Processing</h3>
+                <p>Instant tracking and drawing using your webcam.</p>
+            </div>
+            <div class="feature-card">
+                <i class="fa-solid fa-hand-sparkles"></i>
+                <h3>Advanced Hand Tracking</h3>
+                <p>Powered by MediaPipe for precise finger and joint detection.</p>
+            </div>
+            <div class="feature-card">
+                <i class="fa-solid fa-palette"></i>
+                <h3>Multiple Tools</h3>
+                <p>Switch colors and clear the canvas using natural gestures.</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="how-it-works" class="section">
+        <h2 class="section-title">How it Works</h2>
+        <div class="content-box glass-panel">
+            <p>This application captures your webcam feed and processes each frame using <strong>OpenCV</strong>. It then applies Google's <strong>MediaPipe</strong> hand tracking model to detect 21 3D landmarks on your hand.</p>
+            <p>Based on the relative positions of your fingers, the app detects specific gestures. For example, if only your index finger is up, it switches to "drawing mode". If both index and middle fingers are up, it switches to "selection mode" to choose colors or clear the screen.</p>
+        </div>
+    </section>
+
+    <section id="how-to-run" class="section">
+        <h2 class="section-title">How to Run Locally</h2>
+        <div class="code-container glass-panel">
+            <div class="code-header">
+                <span>Terminal</span>
+                <button class="copy-btn" onclick="copyCode()">
+                    <i class="fa-regular fa-copy"></i> Copy
+                </button>
+            </div>
+            <pre><code id="code-block">git clone https://github.com/Akshay7483/virtual-drawing-through-hand-gestures.git
+cd virtual-drawing-through-hand-gestures
+pip install -r requirements.txt
+cd src/backend
+python draw_hand_gestures.py</code></pre>
+        </div>
+    </section>
+
+    <section id="gesture-guide" class="section">
+        <h2 class="section-title">Gesture Guide</h2>
+        <div class="gestures-grid">
+            <div class="gesture-card">
+                <div class="gesture-icon">☝️</div>
+                <h3>Index finger up</h3>
+                <p>Draw mode</p>
+            </div>
+            <div class="gesture-card">
+                <div class="gesture-icon">✌️</div>
+                <h3>Peace sign</h3>
+                <p>Select tool/color</p>
+            </div>
+            <div class="gesture-card">
+                <div class="gesture-card">
+                <div class="gesture-icon">✊</div>
+                <h3>Fist</h3>
+                <p>Undo action</p>
+            </div>
+            <div class="gesture-card">
+                <div class="gesture-icon">🖐️</div>
+                <h3>Open palm</h3>
+                <p>Redo action</p>
+            </div>
+            <div class="gesture-card">
+                <div class="gesture-icon">Q</div>
+                <h3>Q key</h3>
+                <p>Quit application</p>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <p>&copy; 2026 Virtual Drawing Project. Powered by Python, OpenCV & MediaPipe.</p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
