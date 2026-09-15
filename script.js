@@ -145,19 +145,11 @@ function initParticles() {
 
 // Canvas Setup
 function setupCanvases() {
-  const container = document.getElementById('canvasContainer');
+  const container = document.querySelector('.canvas-wrapper');
   if (!container) return;
 
   const width = 1280;
   const height = 720;
-  
-  // Set container style if not set in CSS
-  container.style.position = 'relative';
-  container.style.width = '100%';
-  container.style.maxWidth = `${width}px`;
-  container.style.aspectRatio = '16/9';
-  container.style.margin = '0 auto';
-  container.style.overflow = 'hidden';
 
   // Video Canvas
   videoCanvas = document.getElementById('videoCanvas') || document.createElement('canvas');
@@ -260,10 +252,6 @@ function recognizeShape(points) {
   
   if (circularity > 0.85) return { type: 'circle', cx, cy, radius: avgRadius };
   
-  const aspectRatio = w / h;
-  if (aspectRatio > 0.7 && aspectRatio < 1.4) {
-    return { type: 'rectangle', x: minX, y: minY, w, h };
-  }
   return { type: 'rectangle', x: minX, y: minY, w, h };
 }
 
@@ -308,7 +296,7 @@ function drawSkeleton(ctx, landmarks) {
 
 function drawStatsAndMode(ctx, mode) {
   const timeStr = stats.startTime ? Math.floor((Date.now() - stats.startTime) / 1000) + 's' : '0s';
-  const text = `Mode: ${mode} | Strokes: ${stats.strokeCount} | Colors: ${stats.colorsUsed.size} | Shapes: ${stats.shapesRecognized} | Time: ${timeStr}`;
+  const text = `Strokes: ${stats.strokeCount} | Colors: ${stats.colorsUsed.size} | Shapes: ${stats.shapesRecognized} | Time: ${timeStr}`;
   
   ctx.fillStyle = 'rgba(0,0,0,0.5)';
   ctx.fillRect(10, ctx.canvas.height - 40, ctx.canvas.width - 20, 30);
@@ -316,6 +304,10 @@ function drawStatsAndMode(ctx, mode) {
   ctx.fillStyle = 'white';
   ctx.font = '16px Arial';
   ctx.fillText(text, 20, ctx.canvas.height - 20);
+  
+  // Update gesture mode display in HTML
+  const gestureModeEl = document.getElementById('gestureMode');
+  if (gestureModeEl) gestureModeEl.textContent = `Mode: ${mode}`;
 }
 
 // Main Process Loop
@@ -446,31 +438,52 @@ async function processFrame() {
 
 // Setup UI Handlers
 function setupUI() {
-  const startBtn = document.getElementById('startCameraBtn');
-  const stopBtn = document.getElementById('stopCameraBtn');
+  const startBtn = document.getElementById('startBtn');
+  const stopBtn = document.getElementById('stopBtn');
   const clearBtn = document.getElementById('clearBtn');
   const undoBtn = document.getElementById('undoBtn');
   const redoBtn = document.getElementById('redoBtn');
-  const shapeBtn = document.getElementById('shapeBtn');
+  const shapesBtn = document.getElementById('shapesBtn');
   const saveBtn = document.getElementById('saveBtn');
   const eraserBtn = document.getElementById('eraserBtn');
+  const brushSizeSlider = document.getElementById('brushSize');
+  const brushSizeLabel = document.getElementById('brushSizeLabel');
+  const statusText = document.getElementById('statusText');
+  const loadingOverlay = document.getElementById('loadingOverlay');
   const colorButtons = document.querySelectorAll('.color-btn');
   
   if (startBtn) {
     startBtn.addEventListener('click', async () => {
       try {
+        // Show loading overlay
+        if (loadingOverlay) loadingOverlay.style.display = 'flex';
+        if (statusText) statusText.textContent = 'Starting camera...';
+        startBtn.disabled = true;
+        
+        // Initialize MediaPipe if not already done
+        if (!handLandmarker) await initMediaPipe();
+        
         const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 1280, height: 720 } });
         video.srcObject = stream;
-        video.play();
+        await video.play();
+        
         isRunning = true;
         stats.startTime = Date.now();
-        if (startBtn) startBtn.style.display = 'none';
-        if (stopBtn) stopBtn.style.display = 'inline-block';
-        if (!handLandmarker) await initMediaPipe();
+        
+        startBtn.disabled = true;
+        startBtn.style.opacity = '0.5';
+        if (stopBtn) stopBtn.disabled = false;
+        if (statusText) statusText.textContent = 'Camera active — draw with your hand!';
+        if (loadingOverlay) loadingOverlay.style.display = 'none';
+        
         processFrame();
       } catch (err) {
         console.error("Camera access denied or failed", err);
-        alert("Could not access camera. Please allow camera permissions.");
+        if (statusText) statusText.textContent = 'Error: ' + err.message;
+        if (loadingOverlay) loadingOverlay.style.display = 'none';
+        startBtn.disabled = false;
+        startBtn.style.opacity = '1';
+        alert("Could not access camera. Please allow camera permissions and make sure you're using HTTPS.");
       }
     });
   }
@@ -482,11 +495,12 @@ function setupUI() {
         video.srcObject.getTracks().forEach(track => track.stop());
       }
       if (animationFrameId) cancelAnimationFrame(animationFrameId);
-      uiCtx.clearRect(0, 0, uiCanvas.width, uiCanvas.height);
-      videoCtx.clearRect(0, 0, videoCanvas.width, videoCanvas.height);
+      if (uiCtx) uiCtx.clearRect(0, 0, uiCanvas.width, uiCanvas.height);
+      if (videoCtx) videoCtx.clearRect(0, 0, videoCanvas.width, videoCanvas.height);
       
-      if (stopBtn) stopBtn.style.display = 'none';
-      if (startBtn) startBtn.style.display = 'inline-block';
+      stopBtn.disabled = true;
+      if (startBtn) { startBtn.disabled = false; startBtn.style.opacity = '1'; }
+      if (statusText) statusText.textContent = 'Camera stopped';
     });
   }
 
@@ -498,10 +512,10 @@ function setupUI() {
   if (undoBtn) undoBtn.addEventListener('click', () => performUndo());
   if (redoBtn) redoBtn.addEventListener('click', () => performRedo());
   
-  if (shapeBtn) {
-    shapeBtn.addEventListener('click', () => {
+  if (shapesBtn) {
+    shapesBtn.addEventListener('click', () => {
       shapeMode = !shapeMode;
-      shapeBtn.classList.toggle('active', shapeMode);
+      shapesBtn.classList.toggle('active', shapeMode);
     });
   }
   
@@ -521,6 +535,13 @@ function setupUI() {
     });
   }
   
+  if (brushSizeSlider) {
+    brushSizeSlider.addEventListener('input', (e) => {
+      currentThickness = parseInt(e.target.value);
+      if (brushSizeLabel) brushSizeLabel.textContent = `Size: ${currentThickness}`;
+    });
+  }
+  
   if (colorButtons) {
     colorButtons.forEach(btn => {
       btn.addEventListener('click', (e) => {
@@ -528,9 +549,9 @@ function setupUI() {
         if (eraserBtn) eraserBtn.classList.remove('active');
         
         colorButtons.forEach(b => b.classList.remove('active'));
-        e.target.classList.add('active');
+        e.currentTarget.classList.add('active');
         
-        currentColor = e.target.dataset.color || e.target.style.backgroundColor;
+        currentColor = e.currentTarget.dataset.color;
         stats.colorsUsed.add(currentColor);
       });
     });
